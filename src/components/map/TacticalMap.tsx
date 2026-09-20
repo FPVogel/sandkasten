@@ -36,6 +36,7 @@ interface TacticalMapProps {
   onUnitDrag?: (unitId: string, position: { lat: number; lng: number }) => void;
   infrastructure?: InfrastructureAsset[];
   onInfrastructureTarget?: (asset: InfrastructureAsset) => void;
+  onContactTarget?: (contact: Contact) => void;
   onContextMenu?: (position: { lng: number; lat: number }) => void;
 }
 
@@ -58,6 +59,7 @@ export function TacticalMap({
   onUnitDrag,
   infrastructure = [],
   onInfrastructureTarget,
+  onContactTarget,
   onContextMenu,
 }: TacticalMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -186,6 +188,7 @@ export function TacticalMap({
               map={mapRef.current}
               contacts={contacts}
               fogOfWar={fogOfWar}
+              onContextTarget={onContactTarget}
             />
           )}
           {orders && (

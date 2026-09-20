@@ -41,6 +41,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 ### Foundation
 - Maven-style common operating picture with NATO MIL-STD-2525 symbols, key-free OpenStreetMap tiles, and a selectable key-free Esri satellite layer
 - Windowed operational workspaces for assets, possible targets, weapon selection, intelligence, combat, news, and NPC AI activity
+- Persistent sidebar contains only owned assets; orders, radar contacts, intelligence, combat, targeting, and news open in dedicated sub-menu windows
 - Real OpenStreetMap infrastructure snapshot for the scenario area (airbases, runways, hospitals, ports, radar, and power), with provenance IDs and damage-responsive status/symbology
 - Demo scenario: US carrier strike group vs. Iranian naval forces, Strait of Hormuz
 - Click units for detailed Info/Sensors/Weapons panels
@@ -79,6 +80,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 - Countermeasures: chaff, ECM, decoys
 - Combat log with full event history
 - Three-step effects workflow: select an asset, right-click a target, then left-click a weapon/effect; infrastructure battle damage updates integrity and operational state
+- Enemy units detected by sensors appear as uncertainty-aware radar pings in the target-development window and can be nominated directly from the map or radar contact list
 
 ### InfoWar Feed
 - Game events produce simulated media coverage via local LLM ([Ollama](https://ollama.com)) in a separate News & Information Environment window

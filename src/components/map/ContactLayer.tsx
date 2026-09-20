@@ -14,6 +14,7 @@ interface ContactLayerProps {
   map: maplibregl.Map;
   contacts: Contact[];
   fogOfWar?: boolean;
+  onContextTarget?: (contact: Contact) => void;
 }
 
 const CLASSIFICATION_COLORS: Record<Contact["classification"], string> = {
@@ -30,8 +31,11 @@ const CLASSIFICATION_SYMBOLS: Record<Contact["classification"], string> = {
   tracked: "X",
 };
 
-export function ContactLayer({ map, contacts, fogOfWar = true }: ContactLayerProps) {
+export function ContactLayer({ map, contacts, fogOfWar = true, onContextTarget }: ContactLayerProps) {
   const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const onContextTargetRef = useRef(onContextTarget);
+
+  useEffect(() => { onContextTargetRef.current = onContextTarget; }, [onContextTarget]);
 
   // Contact markers
   useEffect(() => {
@@ -72,6 +76,11 @@ export function ContactLayer({ map, contacts, fogOfWar = true }: ContactLayerPro
       `;
       el.innerHTML = `<span style="transform: ${contact.classification === "unknown" ? "none" : "rotate(-45deg)"}">${symbol}</span>`;
       el.title = `${label} (${contact.sensorType.toUpperCase()})`;
+      el.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onContextTargetRef.current?.(contact);
+      });
 
       const newMarker = new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([contact.position.lng, contact.position.lat])

@@ -14,7 +14,7 @@ import { demoScenarioConfig } from "@/lib/scenarios/demoConfig";
 import { useSimulation } from "@/lib/simulation/useSimulation";
 import { useInfoWar } from "@/lib/infowar/useInfoWar";
 import { formatMeasurement } from "@/components/map/MeasurementLayer";
-import { CommandWindow, TargetCard, WEAPONS, type WorkspaceWindow } from "@/components/game/CommandWindows";
+import { CommandWindow, RadarTargetCard, TargetCard, WEAPONS, type WorkspaceWindow } from "@/components/game/CommandWindows";
 import { applyInfrastructureHit, hormuzInfrastructure, type InfrastructureAsset } from "@/lib/scenarios/infrastructure";
 
 export default function PlayPage() {
@@ -41,7 +41,6 @@ export default function PlayPage() {
   const [pinnedRingIds, setPinnedRingIds] = useState<Set<string>>(new Set());
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [isPlacingWaypoint, setIsPlacingWaypoint] = useState(false);
-  const [sidebarTab, setSidebarTab] = useState<"forces" | "messages" | "combat" | "media">("forces");
   const [showHelp, setShowHelp] = useState(false);
   const [godMode, setGodMode] = useState(false);
   const [showSensorCoverage, setShowSensorCoverage] = useState(false);
@@ -114,11 +113,11 @@ export default function PlayPage() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [togglePause, showHelp, selectedUnitId]);
 
-  // Auto-switch sidebar tab when autopause triggers
+  // Open the relevant operational window when autopause requires attention.
   useEffect(() => {
-    if (autopauseEvent?.suggestedTab) {
-      setSidebarTab(autopauseEvent.suggestedTab);
-    }
+    if (!autopauseEvent?.suggestedTab) return;
+    const window = autopauseEvent.suggestedTab === "messages" ? "intel" : autopauseEvent.suggestedTab;
+    setOpenWindows((previous) => new Set([...previous, window as WorkspaceWindow]));
   }, [autopauseEvent]);
 
   const liveScenario = {
@@ -150,10 +149,22 @@ export default function PlayPage() {
     setOpenWindows((previous) => new Set([...previous, "targets", "weapons"]));
     setStrikeReport(asset ? `TARGET NOMINATED // ${asset.name}` : "POSSIBLE TARGETS SORTED BY PROXIMITY AND EFFECT");
   };
+  const nominateContact = (contact: (typeof gameState.contacts)[number]) => {
+    setTargetId(`contact:${contact.id}`);
+    setOpenWindows((previous) => new Set([...previous, "targets", "weapons"]));
+    setStrikeReport(`RADAR TRACK NOMINATED // ${contact.platformName ?? contact.id} // ${contact.classification.toUpperCase()}`);
+  };
   const authorizeStrike = () => {
     const weapon = WEAPONS.find((item) => item.id === weaponId);
+    if (!weapon || !targetId) return;
+    if (targetId.startsWith("contact:")) {
+      const contact = gameState.contacts.find((item) => item.id === targetId.slice(8));
+      if (!contact) return;
+      setStrikeReport(`ENGAGEMENT QUEUED // ${weapon.name} assigned to radar track ${contact.platformName ?? contact.id} at last known position`);
+      return;
+    }
     const target = infrastructure.find((item) => item.id === targetId);
-    if (!weapon || !target) return;
+    if (!target) return;
     setInfrastructure((assets) => assets.map((asset) => asset.id === target.id ? applyInfrastructureHit(asset, weapon.effect) : asset));
     setStrikeReport(`BDA RECEIVED // ${weapon.name} impact at ${target.name} // network effects recalculated`);
   };
@@ -358,176 +369,21 @@ export default function PlayPage() {
             </button>
           ))}
         </nav>
-        {/* Sidebar */}
-        <div className="w-80 bg-[var(--color-tactical-panel)] border-r border-[var(--color-tactical-border)] flex flex-col text-base shrink-0 overflow-hidden">
-          {/* Tab switcher */}
-          <div data-testid="sidebar-tabs" className="flex border-b border-[var(--color-tactical-border)] shrink-0 overflow-visible">
-            <button
-              onClick={() => setSidebarTab("forces")}
-              data-testid="sidebar-tab-forces"
-              data-active={sidebarTab === "forces" ? "true" : "false"}
-              className={`flex-1 py-2 text-base uppercase tracking-wider cursor-pointer ${
-                sidebarTab === "forces"
-                  ? "text-[var(--color-terminal-green)] border-b border-[var(--color-terminal-green)]"
-                  : "text-[var(--color-tactical-text-dim)]"
-              }`}
-            >
-              Forces
-            </button>
-            <button
-              onClick={() => setSidebarTab("messages")}
-              data-testid="sidebar-tab-messages"
-              data-active={sidebarTab === "messages" ? "true" : "false"}
-              className={`flex-1 py-2 text-base uppercase tracking-wider cursor-pointer ${
-                sidebarTab === "messages"
-                  ? "text-[var(--color-terminal-amber)] border-b border-[var(--color-terminal-amber)]"
-                  : "text-[var(--color-tactical-text-dim)]"
-              }`}
-            >
-              Intel
-              {unreadCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center bg-[var(--color-terminal-amber)] text-[var(--color-tactical-dark)] text-[10px] rounded-full w-5 h-5 font-bold">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setSidebarTab("combat")}
-              data-testid="sidebar-tab-combat"
-              data-active={sidebarTab === "combat" ? "true" : "false"}
-              className={`flex-1 py-2 text-base uppercase tracking-wider cursor-pointer ${
-                sidebarTab === "combat"
-                  ? "text-[var(--color-terminal-red)] border-b border-[var(--color-terminal-red)]"
-                  : "text-[var(--color-tactical-text-dim)]"
-              }`}
-            >
-              Combat
-              {(combatState?.weaponsInFlight.length ?? 0) > 0 && (
-                <span
-                  data-testid="weapons-in-flight-badge"
-                  className="ml-1 inline-flex items-center justify-center bg-[var(--color-terminal-red)] text-[var(--color-tactical-dark)] text-[10px] rounded-full w-5 h-5 font-bold"
-                >
-                  {combatState?.weaponsInFlight.length}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => setSidebarTab("media")}
-              data-testid="sidebar-tab-media"
-              data-active={sidebarTab === "media" ? "true" : "false"}
-              className={`flex-1 py-2 text-base uppercase tracking-wider cursor-pointer ${
-                sidebarTab === "media"
-                  ? "text-[var(--color-terminal-blue)] border-b border-[var(--color-terminal-blue)]"
-                  : "text-[var(--color-tactical-text-dim)]"
-              }`}
-            >
-              Media
-              {unreadMediaCount > 0 && (
-                <span className="ml-1 inline-flex items-center justify-center bg-[var(--color-terminal-blue)] text-[var(--color-tactical-dark)] text-[10px] rounded-full w-5 h-5 font-bold">
-                  {unreadMediaCount}
-                </span>
-              )}
-            </button>
+        {/* The persistent sidebar is intentionally limited to owned assets. */}
+        <aside className="w-80 bg-[var(--color-tactical-panel)] border-r border-[var(--color-tactical-border)] flex flex-col text-base shrink-0 overflow-hidden" aria-label="Owned assets">
+          <div className="px-4 py-3 border-b border-[var(--color-tactical-border)]">
+            <div className="text-[10px] text-[var(--color-tactical-text-dim)] tracking-[.18em]">OWN FORCE</div>
+            <div className="text-sm font-bold text-[var(--color-tactical-text)] tracking-wider">ASSETS ({friendlyUnits.length})</div>
           </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {sidebarTab === "forces" && (
-              <>
-                {/* Friendly units */}
-                <div className="p-2 border-b border-[var(--color-tactical-border)]">
-                  <div className="text-[var(--color-tactical-text-dim)] uppercase tracking-wider mb-2">
-                    Forces ({friendlyUnits.length})
-                  </div>
-                  {friendlyUnits.map((u) => (
-                    <button
-                      key={u.id}
-                      onClick={() => handleUnitSelect(u.id)}
-                      className={`w-full text-left px-2 py-1 rounded truncate cursor-pointer ${
-                        selectedUnitId === u.id
-                          ? "text-[var(--color-terminal-green)] bg-[var(--color-tactical-border)]"
-                          : "text-[var(--color-tactical-text)] hover:bg-[var(--color-tactical-border)]"
-                      }`}
-                    >
-                      {u.name}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Orders for selected unit */}
-                {selectedUnit && selectedOrders && selectedUnit.side === gameState.scenario.playerSide && (
-                  <div className="p-2 border-b border-[var(--color-tactical-border)]">
-                    <OrderPanel
-                      unit={selectedUnit}
-                      orders={selectedOrders}
-                      isPlacingWaypoint={isPlacingWaypoint}
-                      onToggleWaypointMode={() => setIsPlacingWaypoint((p) => !p)}
-                      onClearWaypoints={() => clearWaypoints(selectedUnit.id)}
-                      onSetThrottle={(t) => setThrottle(selectedUnit.id, t)}
-                      onSetAltitude={(altitude) => setAltitude(selectedUnit.id, altitude)}
-                      onSetWeaponsControl={(control) => setWeaponsControl(selectedUnit.id, control)}
-                      onToggleRadar={() => toggleRadar(selectedUnit.id)}
-                    />
-                  </div>
-                )}
-
-                {/* Contact list */}
-                <div className="p-2">
-                  <div className="text-[var(--color-tactical-text-dim)] uppercase tracking-wider mb-2">
-                    Contacts ({gameState.contacts.length})
-                  </div>
-                  <ContactList
-                    contacts={gameState.contacts}
-                    simTime={gameState.simTime}
-                  />
-                </div>
-              </>
-            )}
-
-            {sidebarTab === "messages" && (
-              <div className="p-2">
-                <MessageLog
-                  messages={messages}
-                  simTime={gameState.simTime}
-                  onMarkRead={markMessageRead}
-                />
-              </div>
-            )}
-
-            {sidebarTab === "combat" && (
-              <div className="p-2">
-                {(combatState?.weaponsInFlight.length ?? 0) > 0 && (
-                  <div className="mb-2 pb-2 border-b border-[var(--color-tactical-border)]">
-                    <div className="text-[var(--color-terminal-red)] text-sm uppercase tracking-wider mb-1">
-                      <span data-testid="weapons-in-flight-count">
-                        Weapons in Flight ({combatState?.weaponsInFlight.length})
-                      </span>
-                    </div>
-                    {combatState?.weaponsInFlight.map((w) => (
-                      <div key={w.id} className="text-sm text-[var(--color-tactical-text)] mb-0.5">
-                        <span className="text-[var(--color-terminal-amber)]">{">>"}</span>{" "}
-                        {w.name} → {w.targetId.split("-").slice(0, 2).join("-")}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <CombatLog
-                  events={combatState?.combatLog ?? []}
-                  simTime={gameState.simTime}
-                  playerSide={gameState.scenario.playerSide}
-                />
-              </div>
-            )}
-
-            {sidebarTab === "media" && (
-              <MediaFeed
-                infoWarState={infoWarState}
-                simTime={gameState.simTime}
-                onToggleEnabled={toggleEnabled}
-                onMarkRead={markPostRead}
-              />
-            )}
+          <div className="flex-1 overflow-y-auto p-2">
+            {friendlyUnits.map((unit) => (
+              <button key={unit.id} onClick={() => { handleUnitSelect(unit.id); setOpenWindows((previous) => new Set([...previous, "assets"])); }} className={`w-full text-left px-3 py-2 mb-1 rounded cursor-pointer border ${selectedUnitId === unit.id ? "text-[var(--color-terminal-green)] bg-[var(--color-tactical-border)] border-[var(--color-terminal-green)]" : "text-[var(--color-tactical-text)] border-transparent hover:bg-[var(--color-tactical-border)]"}`}>
+                <span className="block text-sm truncate">{unit.name}</span>
+                <span className="block text-[10px] text-[var(--color-tactical-text-dim)]">{unit.mission ?? "UNASSIGNED"} · {unit.damageState.toUpperCase()}</span>
+              </button>
+            ))}
           </div>
-        </div>
+        </aside>
 
         {/* Map */}
         <div className="flex-1 relative">
@@ -548,6 +404,7 @@ export default function PlayPage() {
             onMapClick={handleMapClick}
             infrastructure={infrastructure}
             onInfrastructureTarget={openTargetWorkflow}
+            onContactTarget={nominateContact}
             onContextMenu={() => openTargetWorkflow()}
           />
 
@@ -556,8 +413,25 @@ export default function PlayPage() {
             <button onClick={() => setBasemap("satellite")} className={`px-3 py-1.5 text-xs cursor-pointer ${basemap === "satellite" ? "bg-[#29465f] text-white" : "text-slate-400"}`}>SATELLITE · NO KEY</button>
           </div>
 
+          {openWindows.has("assets") && selectedUnit && selectedOrders && <CommandWindow title={selectedUnit.name} eyebrow="ASSET ORDERS" onClose={() => closeWindow("assets")} className="top-16 left-4">
+            <OrderPanel unit={selectedUnit} orders={selectedOrders} isPlacingWaypoint={isPlacingWaypoint} onToggleWaypointMode={() => setIsPlacingWaypoint((p) => !p)} onClearWaypoints={() => clearWaypoints(selectedUnit.id)} onSetThrottle={(throttle) => setThrottle(selectedUnit.id, throttle)} onSetAltitude={(altitude) => setAltitude(selectedUnit.id, altitude)} onSetWeaponsControl={(control) => setWeaponsControl(selectedUnit.id, control)} onToggleRadar={() => toggleRadar(selectedUnit.id)} />
+          </CommandWindow>}
+
+          {openWindows.has("intel") && <CommandWindow title="Intelligence" eyebrow="REPORTING & RADAR PICTURE" onClose={() => closeWindow("intel")} className="top-16 right-4">
+            <MessageLog messages={messages} simTime={gameState.simTime} onMarkRead={markMessageRead} />
+            <div className="mt-3 pt-3 border-t border-slate-700"><div className="text-[10px] text-slate-400 tracking-widest mb-2">RADAR CONTACTS ({gameState.contacts.length})</div><ContactList contacts={gameState.contacts} simTime={gameState.simTime} onContactClick={nominateContact} /></div>
+          </CommandWindow>}
+
+          {openWindows.has("combat") && <CommandWindow title="Combat" eyebrow="ENGAGEMENT ACTIVITY" onClose={() => closeWindow("combat")} className="bottom-12 left-4">
+            {(combatState?.weaponsInFlight.length ?? 0) > 0 && <div className="text-xs text-red-400 mb-2">WEAPONS IN FLIGHT ({combatState?.weaponsInFlight.length})</div>}
+            <CombatLog events={combatState?.combatLog ?? []} simTime={gameState.simTime} playerSide={gameState.scenario.playerSide} />
+          </CommandWindow>}
+
           {openWindows.has("targets") && <CommandWindow title="Possible Targets" eyebrow="TARGET DEVELOPMENT" onClose={() => closeWindow("targets")} className="top-16 left-4">
             <div className="text-[10px] text-slate-400 mb-2">{strikeReport}</div>
+            <div className="text-[10px] text-amber-400 tracking-[.15em] mb-1">RADAR PINGS ({gameState.contacts.length})</div>
+            {gameState.contacts.length === 0 ? <p className="text-xs text-slate-500 p-2">No enemy tracks. Run the simulation to build the radar picture.</p> : gameState.contacts.map((contact) => <RadarTargetCard key={contact.id} contact={contact} simTime={gameState.simTime} selected={targetId === `contact:${contact.id}`} onSelect={() => nominateContact(contact)} />)}
+            <div className="text-[10px] text-slate-400 tracking-[.15em] mt-3 mb-1">INFRASTRUCTURE ({infrastructure.length})</div>
             {infrastructure.map((asset) => <TargetCard key={asset.id} asset={asset} selected={targetId === asset.id} onSelect={() => { setTargetId(asset.id); setStrikeReport(`TARGET SELECTED // LEFT-CLICK A WEAPON, THEN AUTHORIZE`); }} />)}
           </CommandWindow>}
 

@@ -119,6 +119,8 @@ body {
 .target-card b { color:#b9c8d6; font-size:11px; }
 .target-status { width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 7px #22c55e; }
 .status-degraded { background:#f59e0b; }.status-disabled,.status-destroyed { background:#ef4444; }
+.radar-ping { width:10px;height:10px;border:2px solid #f59e0b;border-radius:50%;box-shadow:0 0 0 3px #f59e0b22,0 0 9px #f59e0b; }
+.radar-ping-classified,.radar-ping-tracked { border-color:#ef4444;box-shadow:0 0 0 3px #ef444422,0 0 9px #ef4444; }
 .workspace-rail { width:64px; background:#0b1420; border-right:1px solid #33485b; display:flex; flex-direction:column; align-items:center; padding-top:10px; gap:6px; }
 .workspace-tool { width:52px; min-height:48px; border:1px solid transparent; border-radius:3px; color:#8398ac; font-size:9px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; text-transform:uppercase; }
 .workspace-tool span {font-size:17px}.workspace-tool:hover,.workspace-tool.active { color:#d7eaff;background:#17283b;border-color:#385a77; }
