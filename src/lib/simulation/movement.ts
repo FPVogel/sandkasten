@@ -100,6 +100,19 @@ export function updateUnitMovement(
   orders: UnitOrders,
   dtSeconds: number
 ): { unit: Unit; orders: UnitOrders } {
+  const applyAltitude = (movedUnit: Unit): Unit => {
+    if (unit.altitude === undefined || orders.desiredAltitude === undefined) return movedUnit;
+    // A conservative default climb/descent rate keeps altitude orders gradual.
+    const maxChange = 3000 * (dtSeconds / 60);
+    const delta = orders.desiredAltitude - (movedUnit.altitude ?? 0);
+    return {
+      ...movedUnit,
+      altitude: Math.abs(delta) <= maxChange
+        ? orders.desiredAltitude
+        : (movedUnit.altitude ?? 0) + Math.sign(delta) * maxChange,
+    };
+  };
+
   if (orders.waypoints.length === 0) {
     // No waypoints — unit holds position at current speed/heading
     if (unit.speed > 0) {
@@ -107,11 +120,11 @@ export function updateUnitMovement(
       const distKm = (unit.speed * KM_PER_NM * dtSeconds) / 3600;
       const newPos = moveAlongBearing(unit.position, unit.heading, distKm);
       return {
-        unit: { ...unit, position: newPos },
+        unit: applyAltitude({ ...unit, position: newPos }),
         orders,
       };
     }
-    return { unit, orders };
+    return { unit: applyAltitude(unit), orders };
   }
 
   const speed = getUnitSpeed(unit, orders);
@@ -140,7 +153,7 @@ export function updateUnitMovement(
     }
 
     return {
-      unit: newUnit,
+      unit: applyAltitude(newUnit),
       orders: { ...orders, waypoints: newWaypoints },
     };
   }
@@ -148,12 +161,12 @@ export function updateUnitMovement(
   // Move toward waypoint
   const newPos = moveAlongBearing(unit.position, bearing, distKm);
   return {
-    unit: {
+    unit: applyAltitude({
       ...unit,
       position: newPos,
       heading: bearing,
       speed,
-    },
+    }),
     orders,
   };
 }

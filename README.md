@@ -39,7 +39,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 ## Current State
 
 ### Foundation
-- Dark tactical map with NATO MIL-STD-2525 symbols
+- Dark tactical map with NATO MIL-STD-2525 symbols and key-free OpenStreetMap tiles
 - Demo scenario: US carrier strike group vs. Iranian naval forces, Strait of Hormuz
 - Click units for detailed Info/Sensors/Weapons panels
 - Shift+click to pin sensor range rings
@@ -51,7 +51,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 
 ### Simulation
 - Real-time simulation at `/play`
-- Waypoint-based movement with four throttle settings
+- Waypoint-based movement with four throttle settings and aircraft altitude orders
 - Radar detection (range-based probability, radar horizon)
 - ESM passive detection of active emitters
 - Contact classification: Unknown → Detected → Classified → Tracked
@@ -68,6 +68,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 - Cascading doctrine: side → mission → unit overrides
 
 ### Combat
+- Per-unit weapons hold/tight/free release authority for player-controlled forces
 - Anti-ship missile launch, flight, intercept
 - WRA-based salvo sizing — ships fire 2-8 missiles based on target's missile defense
 - Weapon tracks on map — dashed lines showing missiles in flight
@@ -87,7 +88,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 - Covers controls, game concepts, sidebar guide, and media feed setup
 
 ### Testing
-- 29 Playwright E2E tests covering page loads, simulation gameplay, combat, autopause, and design system
+- 35 Playwright E2E tests covering page loads, simulation gameplay, combat, autopause, and design system
 - `npm test` runs all tests headless; `npm run test:ui` opens the visual debugger
 
 ---
@@ -119,7 +120,7 @@ The demo scenario includes a built-in platform set. For the full database (4,700
 python scripts/extract_cmo_db.py
 ```
 
-Reads CMO's SQLite database files, outputs JSON to `data/extraction/`. Gitignored — derived from proprietary game files.
+Reads CMO's SQLite database from `$HOME/games-hdd/SteamLibrary/steamapps/common/Command - Modern Operations/DB/DB3K_512.db3` and outputs JSON to `data/extraction/`. Set `CMO_DB_PATH` to override the location. Extracted data is gitignored because it is derived from proprietary game files.
 
 ### InfoWar Feed (Optional)
 
@@ -136,7 +137,7 @@ The Media tab connects automatically when Ollama is running.
 ## Tech Stack
 
 - **Next.js 16** — TypeScript, Tailwind CSS
-- **MapLibre GL JS** — tactical map (dark Carto basemap)
+- **MapLibre GL JS** — tactical map (key-free OpenStreetMap basemap)
 - **milsymbol** — NATO MIL-STD-2525 symbol rendering
 - **Ollama** — local LLM for InfoWar media generation (optional)
 - **Python** — CMO database extraction (sqlite3, standard library)
@@ -186,7 +187,7 @@ sandkasten/
 | **Combat** | Missiles, SAM defense, damage, salvos, weapon tracks | Complete |
 | **InfoWar Feed** | Media coverage from game events via local LLM | Complete |
 | **Polish** | Autopause, god mode, sensors overlay, measurement, E2E tests | Complete |
-| **Remaining gaps** | Fuel consumption, aircraft altitude, game save/load | Next |
+| **Remaining gaps** | Fuel consumption, detailed aircraft flight profiles, game save/load | Next |
 | **WeGo Multiplayer** | WebSocket sync, turn system, lobby, server-side fog of war | Planned |
 | **Community** | Scenario sharing, Auftragstaktik OSINT import, campaign mode | Planned |
 

@@ -241,6 +241,7 @@ export function applyStateChanges(
             waypoints: [],
             throttle: 2,
             radarActive: true,
+            weaponsControl: "hold",
           });
         }
         newState = { ...newState, orders: newOrders };

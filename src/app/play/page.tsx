@@ -27,6 +27,8 @@ export default function PlayPage() {
     addWaypoint,
     clearWaypoints,
     setThrottle,
+    setAltitude,
+    setWeaponsControl,
     toggleRadar,
     markMessageRead,
     resetSimulation,
@@ -419,6 +421,8 @@ export default function PlayPage() {
                       onToggleWaypointMode={() => setIsPlacingWaypoint((p) => !p)}
                       onClearWaypoints={() => clearWaypoints(selectedUnit.id)}
                       onSetThrottle={(t) => setThrottle(selectedUnit.id, t)}
+                      onSetAltitude={(altitude) => setAltitude(selectedUnit.id, altitude)}
+                      onSetWeaponsControl={(control) => setWeaponsControl(selectedUnit.id, control)}
                       onToggleRadar={() => toggleRadar(selectedUnit.id)}
                     />
                   </div>

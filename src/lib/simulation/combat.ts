@@ -289,9 +289,6 @@ function checkEngagements(
       ...sideDoctrine[side.name],
     };
 
-    // Skip player side — player doesn't auto-engage (manual targeting in future)
-    if (!side.isAI) continue;
-
     for (const unit of side.units) {
       if (unit.damageState === "destroyed" || unit.damageState === "mission-kill") continue;
 
@@ -302,12 +299,15 @@ function checkEngagements(
       const platform = getPlatform(unit.platformId);
       if (!platform?.weapons || platform.weapons.length === 0) continue;
 
+      const unitOrders = state.orders.get(unit.id);
+      if (!side.isAI && (!unitOrders || unitOrders.weaponsControl === "hold")) continue;
+
       // Determine if unit is under attack (has incoming weapons)
       const isUnderAttack = combatState.weaponsInFlight.some(
         (w) => w.targetId === unit.id
       );
 
-      if (!shouldEngage(doctrine, isUnderAttack)) continue;
+      if (side.isAI && !shouldEngage(doctrine, isUnderAttack)) continue;
 
 
       // Find nearest enemy
@@ -316,7 +316,8 @@ function checkEngagements(
         (u) =>
           u.side !== side.name &&
           u.side !== "Civilian" &&
-          u.damageState !== "destroyed"
+          u.damageState !== "destroyed" &&
+          (side.isAI || isAuthorizedPlayerTarget(state, u.id, unitOrders!.weaponsControl))
       );
 
       for (const enemy of enemies) {
@@ -468,6 +469,21 @@ function computeSalvoSize(
 }
 
 // --- Helpers ---
+
+function isAuthorizedPlayerTarget(
+  state: GameState,
+  targetId: string,
+  control: UnitOrders["weaponsControl"]
+): boolean {
+  const contact = state.contacts.find(
+    (candidate) =>
+      candidate.actualUnitId === targetId &&
+      candidate.side === state.scenario.playerSide
+  );
+  if (!contact) return false;
+  if (control === "free") return true;
+  return contact.classification === "classified" || contact.classification === "tracked";
+}
 
 function createEvent(
   time: number,

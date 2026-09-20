@@ -13,7 +13,11 @@ from pathlib import Path
 
 # --- Configuration ---
 
-DB_PATH = r"C:\Program Files (x86)\Steam\steamapps\common\Command - Modern Operations\DB\DB3K_512.db3"
+DB_PATH = Path(os.environ.get(
+    "CMO_DB_PATH",
+    Path.home() / "games-hdd" / "SteamLibrary" / "steamapps" / "common"
+    / "Command - Modern Operations" / "DB" / "DB3K_512.db3",
+)).expanduser()
 OUTPUT_DIR = Path(__file__).parent.parent / "data" / "extraction"
 RAW_DIR = Path(__file__).parent.parent / "data" / "raw"
 
@@ -776,7 +780,7 @@ def extract_deferred(conn):
 def main():
     if not os.path.exists(DB_PATH):
         print(f"ERROR: Database not found at {DB_PATH}")
-        print("Update DB_PATH at the top of this script.")
+        print("Set CMO_DB_PATH or place the database under your home directory at the path above.")
         sys.exit(1)
 
     print(f"CMO Database Extraction")
