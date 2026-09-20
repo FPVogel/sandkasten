@@ -16,6 +16,7 @@ import { useInfoWar } from "@/lib/infowar/useInfoWar";
 import { formatMeasurement } from "@/components/map/MeasurementLayer";
 import { CommandWindow, RadarTargetCard, TargetCard, WEAPONS, type WorkspaceWindow } from "@/components/game/CommandWindows";
 import { applyInfrastructureHit, hormuzInfrastructure, type InfrastructureAsset } from "@/lib/scenarios/infrastructure";
+import { TakWorkspace } from "@/components/game/TakWorkspace";
 
 export default function PlayPage() {
   const {
@@ -362,7 +363,7 @@ export default function PlayPage() {
         <nav className="workspace-rail" aria-label="Operational workspaces">
           {([
             ["assets", "◇", "Assets"], ["targets", "⌖", "Targets"], ["weapons", "△", "Weapons"],
-            ["intel", "▤", "Intel"], ["combat", "⚡", "Combat"], ["news", "◫", "News"], ["ai", "◎", "NPC AI"],
+            ["intel", "▤", "Intel"], ["combat", "⚡", "Combat"], ["tak", "⌁", "TAK"], ["news", "◫", "News"], ["ai", "◎", "NPC AI"],
           ] as [WorkspaceWindow, string, string][]).map(([id, icon, label]) => (
             <button key={id} onClick={() => toggleWindow(id)} className={`workspace-tool ${openWindows.has(id) ? "active" : ""}`} aria-label={`Toggle ${label} window`}>
               <span>{icon}</span>{label}
@@ -444,6 +445,10 @@ export default function PlayPage() {
 
           {openWindows.has("news") && <CommandWindow title="News & Information Environment" eyebrow="SEPARATE LIVE WINDOW" onClose={() => closeWindow("news")} className="top-16 right-4 w-[390px]">
             <MediaFeed infoWarState={infoWarState} simTime={gameState.simTime} onToggleEnabled={toggleEnabled} onMarkRead={markPostRead} />
+          </CommandWindow>}
+
+          {openWindows.has("tak") && <CommandWindow title="TAK Operations" eyebrow="TEAM AWARENESS KIT" onClose={() => closeWindow("tak")} className="top-16 right-4 w-[440px]">
+            <TakWorkspace units={friendlyUnits} contacts={gameState.contacts} orders={gameState.orders} simTime={gameState.simTime} />
           </CommandWindow>}
 
           {openWindows.has("ai") && <CommandWindow title="NPC AI Activity" eyebrow="AUTONOMOUS ACTORS" onClose={() => closeWindow("ai")} className="bottom-12 right-4">

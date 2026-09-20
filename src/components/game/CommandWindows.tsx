@@ -4,7 +4,7 @@ import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { InfrastructureAsset } from "@/lib/scenarios/infrastructure";
 import type { Contact } from "@/lib/simulation/gameState";
 
-export type WorkspaceWindow = "assets" | "targets" | "weapons" | "intel" | "combat" | "news" | "ai";
+export type WorkspaceWindow = "assets" | "targets" | "weapons" | "intel" | "combat" | "news" | "ai" | "tak";
 
 export function CommandWindow({ title, eyebrow, onClose, children, className = "" }: { title: string; eyebrow?: string; onClose: () => void; children: ReactNode; className?: string }) {
   const [offset, setOffset] = useState({ x: 0, y: 0 });

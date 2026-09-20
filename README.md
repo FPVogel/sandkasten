@@ -43,6 +43,7 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 - Windowed operational workspaces for assets, possible targets, weapon selection, intelligence, combat, news, and NPC AI activity
 - Persistent sidebar contains only owned assets; orders, radar contacts, intelligence, combat, targeting, and news open in dedicated sub-menu windows
 - Operational sub-menu windows can be repositioned by dragging their title bars
+- TAK Operations workspace with team tracking, channels/GeoChat-style messaging, mission sync, route-aware data packages, CoT XML export, emergency/CASEVAC alerts, and video-source monitoring
 - Real OpenStreetMap infrastructure snapshot for the scenario area (airbases, runways, hospitals, ports, radar, and power), with provenance IDs and damage-responsive status/symbology
 - Demo scenario: US carrier strike group vs. Iranian naval forces, Strait of Hormuz
 - Click units for detailed Info/Sensors/Weapons panels
