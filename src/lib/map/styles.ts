@@ -3,6 +3,7 @@ import type { StyleSpecification } from "maplibre-gl";
 function openStreetMapStyle(dark: boolean): StyleSpecification {
   return {
     version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
     sources: {
       openstreetmap: {
         type: "raster",
@@ -29,6 +30,25 @@ function openStreetMapStyle(dark: boolean): StyleSpecification {
 export const tacticalDarkStyle = openStreetMapStyle(true);
 export const tacticalLightStyle = openStreetMapStyle(false);
 
-export function getMapStyle(theme: "dark" | "light"): StyleSpecification {
+/** Esri publishes this imagery service for public, attribution-bearing use and
+ * it does not require an account, token, or API key. */
+export const satelliteStyle: StyleSpecification = {
+  version: 8,
+  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
+  sources: {
+    imagery: {
+      type: "raster",
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics",
+    },
+  },
+  layers: [{ id: "imagery", type: "raster", source: "imagery" }],
+};
+
+export function getMapStyle(theme: "dark" | "light" | "satellite"): StyleSpecification {
+  if (theme === "satellite") return satelliteStyle;
   return theme === "dark" ? tacticalDarkStyle : tacticalLightStyle;
 }
