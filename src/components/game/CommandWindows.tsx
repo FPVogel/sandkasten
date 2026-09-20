@@ -1,15 +1,30 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { InfrastructureAsset } from "@/lib/scenarios/infrastructure";
 import type { Contact } from "@/lib/simulation/gameState";
 
 export type WorkspaceWindow = "assets" | "targets" | "weapons" | "intel" | "combat" | "news" | "ai";
 
 export function CommandWindow({ title, eyebrow, onClose, children, className = "" }: { title: string; eyebrow?: string; onClose: () => void; children: ReactNode; className?: string }) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragRef = useRef<{ pointerId: number; x: number; y: number; originX: number; originY: number } | null>(null);
+  const startDrag = (event: PointerEvent<HTMLElement>) => {
+    if ((event.target as HTMLElement).closest("button")) return;
+    dragRef.current = { pointerId: event.pointerId, x: event.clientX, y: event.clientY, originX: offset.x, originY: offset.y };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const drag = (event: PointerEvent<HTMLElement>) => {
+    const state = dragRef.current;
+    if (!state || state.pointerId !== event.pointerId) return;
+    setOffset({ x: state.originX + event.clientX - state.x, y: state.originY + event.clientY - state.y });
+  };
+  const stopDrag = (event: PointerEvent<HTMLElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+  };
   return (
-    <section className={`command-window ${className}`} aria-label={title}>
-      <header className="command-window-header">
+    <section className={`command-window ${className}`} aria-label={title} style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}>
+      <header className="command-window-header" onPointerDown={startDrag} onPointerMove={drag} onPointerUp={stopDrag} onPointerCancel={stopDrag} title="Drag to move window">
         <div><span>{eyebrow ?? "WORKSPACE"}</span><strong>{title}</strong></div>
         <button onClick={onClose} aria-label={`Close ${title}`}>×</button>
       </header>

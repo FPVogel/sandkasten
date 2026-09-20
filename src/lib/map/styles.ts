@@ -3,6 +3,7 @@ import type { StyleSpecification } from "maplibre-gl";
 function openStreetMapStyle(dark: boolean): StyleSpecification {
   return {
     version: 8,
+    glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
     sources: {
       openstreetmap: {
         type: "raster",
@@ -33,6 +34,7 @@ export const tacticalLightStyle = openStreetMapStyle(false);
  * it does not require an account, token, or API key. */
 export const satelliteStyle: StyleSpecification = {
   version: 8,
+  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
   sources: {
     imagery: {
       type: "raster",
