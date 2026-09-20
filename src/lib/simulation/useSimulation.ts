@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { Scenario } from "@/types/game";
-import { createInitialGameState, SPEED_OPTIONS, type GameState } from "./gameState";
+import { createInitialGameState, SPEED_OPTIONS, type GameState, type UnitOrders } from "./gameState";
 import { simulationTick, resetDetectionTimer } from "./engine";
 import { type AIState, resetAITimer } from "@/lib/ai/aiController";
 import type { EventState, EventMessage } from "@/lib/ai/events";
@@ -235,6 +235,29 @@ export function useSimulation(config: ScenarioConfig) {
     });
   }, []);
 
+  const setAltitude = useCallback((unitId: string, altitude: number) => {
+    setGameState((prev) => {
+      const orders = prev.orders.get(unitId);
+      if (!orders) return prev;
+      const newOrders = new Map(prev.orders);
+      newOrders.set(unitId, { ...orders, desiredAltitude: altitude });
+      return { ...prev, orders: newOrders };
+    });
+  }, []);
+
+  const setWeaponsControl = useCallback(
+    (unitId: string, weaponsControl: UnitOrders["weaponsControl"]) => {
+      setGameState((prev) => {
+        const orders = prev.orders.get(unitId);
+        if (!orders) return prev;
+        const newOrders = new Map(prev.orders);
+        newOrders.set(unitId, { ...orders, weaponsControl });
+        return { ...prev, orders: newOrders };
+      });
+    },
+    []
+  );
+
   const markMessageRead = useCallback((messageId: string) => {
     setEventState((prev) => {
       if (!prev) return prev;
@@ -275,6 +298,8 @@ export function useSimulation(config: ScenarioConfig) {
     addWaypoint,
     clearWaypoints,
     setThrottle,
+    setAltitude,
+    setWeaponsControl,
     toggleRadar,
     markMessageRead,
     resetSimulation,

@@ -28,6 +28,7 @@ export interface UnitOrders {
   throttle: number; // 1-4: loiter, cruise, full, flank
   desiredAltitude?: number;
   radarActive: boolean;
+  weaponsControl: "hold" | "tight" | "free";
 }
 
 export interface GameState {
@@ -69,6 +70,7 @@ export function createInitialGameState(
         waypoints: [],
         throttle: 2, // cruise by default
         radarActive: true,
+        weaponsControl: "hold",
       });
     }
   }

@@ -1,44 +1,33 @@
 import type { StyleSpecification } from "maplibre-gl";
 
-export const tacticalDarkStyle: StyleSpecification = {
-  version: 8,
-  sources: {
-    "carto-dark": {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
-      ],
-      tileSize: 256,
-      attribution: "&copy; OpenStreetMap, CARTO",
+function openStreetMapStyle(dark: boolean): StyleSpecification {
+  return {
+    version: 8,
+    sources: {
+      openstreetmap: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256,
+        attribution: "&copy; OpenStreetMap contributors",
+      },
     },
-  },
-  layers: [
-    { id: "carto-dark-layer", type: "raster", source: "carto-dark" },
-  ],
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
-};
+    layers: [{
+      id: "openstreetmap",
+      type: "raster",
+      source: "openstreetmap",
+      paint: dark ? {
+        "raster-brightness-max": 0.42,
+        "raster-contrast": 0.25,
+        "raster-saturation": -0.75,
+      } : undefined,
+    }],
+  };
+}
 
-export const tacticalLightStyle: StyleSpecification = {
-  version: 8,
-  sources: {
-    "carto-light": {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-      ],
-      tileSize: 256,
-      attribution: "&copy; OpenStreetMap, CARTO",
-    },
-  },
-  layers: [
-    { id: "carto-light-layer", type: "raster", source: "carto-light" },
-  ],
-  glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
-};
+// OpenStreetMap's public raster tiles require attribution, but no account,
+// access token, API key, or billing setup.
+export const tacticalDarkStyle = openStreetMapStyle(true);
+export const tacticalLightStyle = openStreetMapStyle(false);
 
 export function getMapStyle(theme: "dark" | "light"): StyleSpecification {
   return theme === "dark" ? tacticalDarkStyle : tacticalLightStyle;

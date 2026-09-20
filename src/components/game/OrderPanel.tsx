@@ -10,6 +10,8 @@ interface OrderPanelProps {
   onToggleWaypointMode: () => void;
   onClearWaypoints: () => void;
   onSetThrottle: (throttle: number) => void;
+  onSetAltitude: (altitude: number) => void;
+  onSetWeaponsControl: (control: UnitOrders["weaponsControl"]) => void;
   onToggleRadar: () => void;
 }
 
@@ -27,6 +29,8 @@ export function OrderPanel({
   onToggleWaypointMode,
   onClearWaypoints,
   onSetThrottle,
+  onSetAltitude,
+  onSetWeaponsControl,
   onToggleRadar,
 }: OrderPanelProps) {
   return (
@@ -99,6 +103,59 @@ export function OrderPanel({
               }`}
             >
               {THROTTLE_LABELS[t]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Aircraft altitude */}
+      {unit.altitude !== undefined && (
+        <div>
+          <div className="text-[var(--color-tactical-text-dim)] uppercase tracking-wider mb-1">
+            Flight level — {(orders.desiredAltitude ?? unit.altitude).toLocaleString()} ft
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {[200, 5000, 15000, 30000, 40000].map((altitude) => (
+              <button
+                key={altitude}
+                onClick={() => onSetAltitude(altitude)}
+                data-testid="order-altitude"
+                data-altitude={altitude}
+                className={`px-2 py-1 rounded text-sm cursor-pointer ${
+                  orders.desiredAltitude === altitude
+                    ? "bg-[var(--color-terminal-blue)] text-[var(--color-tactical-dark)] font-bold"
+                    : "border border-[var(--color-tactical-border)] hover:border-[var(--color-terminal-blue)]"
+                }`}
+              >
+                {altitude >= 1000 ? `${altitude / 1000}K` : altitude}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Weapon release authority */}
+      <div>
+        <div className="text-[var(--color-tactical-text-dim)] uppercase tracking-wider mb-1">
+          Weapons control
+        </div>
+        <div className="flex gap-1">
+          {(["hold", "tight", "free"] as const).map((control) => (
+            <button
+              key={control}
+              onClick={() => onSetWeaponsControl(control)}
+              data-testid="order-weapons-control"
+              data-control={control}
+              title={control === "hold" ? "Do not fire" : control === "tight" ? "Engage classified or tracked contacts" : "Engage any detected hostile contact"}
+              className={`px-2 py-1 rounded text-sm uppercase cursor-pointer ${
+                orders.weaponsControl === control
+                  ? control === "hold"
+                    ? "bg-[var(--color-terminal-red)] text-white font-bold"
+                    : "bg-[var(--color-terminal-amber)] text-[var(--color-tactical-dark)] font-bold"
+                  : "border border-[var(--color-tactical-border)] hover:border-[var(--color-terminal-amber)]"
+              }`}
+            >
+              {control}
             </button>
           ))}
         </div>
