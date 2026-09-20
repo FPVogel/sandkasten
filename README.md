@@ -39,7 +39,9 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 ## Current State
 
 ### Foundation
-- Dark tactical map with NATO MIL-STD-2525 symbols and key-free OpenStreetMap tiles
+- Maven-style common operating picture with NATO MIL-STD-2525 symbols, key-free OpenStreetMap tiles, and a selectable key-free Esri satellite layer
+- Windowed operational workspaces for assets, possible targets, weapon selection, intelligence, combat, news, and NPC AI activity
+- Real OpenStreetMap infrastructure snapshot for the scenario area (airbases, runways, hospitals, ports, radar, and power), with provenance IDs and damage-responsive status/symbology
 - Demo scenario: US carrier strike group vs. Iranian naval forces, Strait of Hormuz
 - Click units for detailed Info/Sensors/Weapons panels
 - Shift+click to pin sensor range rings
@@ -76,9 +78,10 @@ Shares its map renderer and NATO symbology with [Auftragstaktik](https://github.
 - Damage: undamaged → damaged → mission-kill → destroyed
 - Countermeasures: chaff, ECM, decoys
 - Combat log with full event history
+- Three-step effects workflow: select an asset, right-click a target, then left-click a weapon/effect; infrastructure battle damage updates integrity and operational state
 
 ### InfoWar Feed
-- Game events produce simulated media coverage via local LLM ([Ollama](https://ollama.com))
+- Game events produce simulated media coverage via local LLM ([Ollama](https://ollama.com)) in a separate News & Information Environment window
 - Personas: state media, wire services, OSINT analysts, pundits, civilians, troll farms
 - Media channels match the scenario era — 1980s get radio and newspapers, 2020s get tweets and Telegram
 - Game runs fine without Ollama; the Media tab stays empty

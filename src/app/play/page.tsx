@@ -14,6 +14,8 @@ import { demoScenarioConfig } from "@/lib/scenarios/demoConfig";
 import { useSimulation } from "@/lib/simulation/useSimulation";
 import { useInfoWar } from "@/lib/infowar/useInfoWar";
 import { formatMeasurement } from "@/components/map/MeasurementLayer";
+import { CommandWindow, TargetCard, WEAPONS, type WorkspaceWindow } from "@/components/game/CommandWindows";
+import { applyInfrastructureHit, hormuzInfrastructure, type InfrastructureAsset } from "@/lib/scenarios/infrastructure";
 
 export default function PlayPage() {
   const {
@@ -47,6 +49,12 @@ export default function PlayPage() {
   const [measureStart, setMeasureStart] = useState<{ lng: number; lat: number } | null>(null);
   const [measureEnd, setMeasureEnd] = useState<{ lng: number; lat: number } | null>(null);
   const [showAutopauseSettings, setShowAutopauseSettings] = useState(false);
+  const [basemap, setBasemap] = useState<"street" | "satellite">("street");
+  const [infrastructure, setInfrastructure] = useState(hormuzInfrastructure);
+  const [openWindows, setOpenWindows] = useState<Set<WorkspaceWindow>>(new Set(["assets"]));
+  const [targetId, setTargetId] = useState<string | null>(null);
+  const [weaponId, setWeaponId] = useState<string>(WEAPONS[0].id);
+  const [strikeReport, setStrikeReport] = useState("RIGHT-CLICK THE MAP OR AN INFRASTRUCTURE ICON TO BUILD A TARGET SET");
 
   const { infoWarState, toggleEnabled, markPostRead, resetInfoWar } = useInfoWar(
     gameState,
@@ -62,6 +70,9 @@ export default function PlayPage() {
   const handleReset = useCallback(() => {
     resetSimulation();
     resetInfoWar();
+    setInfrastructure(hormuzInfrastructure);
+    setTargetId(null);
+    setStrikeReport("RIGHT-CLICK THE MAP OR AN INFRASTRUCTURE ICON TO BUILD A TARGET SET");
   }, [resetSimulation, resetInfoWar]);
 
   // Keyboard shortcuts
@@ -125,6 +136,27 @@ export default function PlayPage() {
 
   // Scenario result overlay
   const scenarioResult = eventState?.scenarioResult;
+
+  const toggleWindow = (window: WorkspaceWindow) => setOpenWindows((previous) => {
+    const next = new Set(previous);
+    next.has(window) ? next.delete(window) : next.add(window);
+    return next;
+  });
+  const closeWindow = (window: WorkspaceWindow) => setOpenWindows((previous) => {
+    const next = new Set(previous); next.delete(window); return next;
+  });
+  const openTargetWorkflow = (asset?: InfrastructureAsset) => {
+    if (asset) setTargetId(asset.id);
+    setOpenWindows((previous) => new Set([...previous, "targets", "weapons"]));
+    setStrikeReport(asset ? `TARGET NOMINATED // ${asset.name}` : "POSSIBLE TARGETS SORTED BY PROXIMITY AND EFFECT");
+  };
+  const authorizeStrike = () => {
+    const weapon = WEAPONS.find((item) => item.id === weaponId);
+    const target = infrastructure.find((item) => item.id === targetId);
+    if (!weapon || !target) return;
+    setInfrastructure((assets) => assets.map((asset) => asset.id === target.id ? applyInfrastructureHit(asset, weapon.effect) : asset));
+    setStrikeReport(`BDA RECEIVED // ${weapon.name} impact at ${target.name} // network effects recalculated`);
+  };
 
   const handleUnitSelect = useCallback(
     (unitId: string | null, shiftKey?: boolean) => {
@@ -316,6 +348,16 @@ export default function PlayPage() {
       {showHelp && <HelpPanel onClose={() => setShowHelp(false)} />}
 
       <div className="flex-1 flex">
+        <nav className="workspace-rail" aria-label="Operational workspaces">
+          {([
+            ["assets", "◇", "Assets"], ["targets", "⌖", "Targets"], ["weapons", "△", "Weapons"],
+            ["intel", "▤", "Intel"], ["combat", "⚡", "Combat"], ["news", "◫", "News"], ["ai", "◎", "NPC AI"],
+          ] as [WorkspaceWindow, string, string][]).map(([id, icon, label]) => (
+            <button key={id} onClick={() => toggleWindow(id)} className={`workspace-tool ${openWindows.has(id) ? "active" : ""}`} aria-label={`Toggle ${label} window`}>
+              <span>{icon}</span>{label}
+            </button>
+          ))}
+        </nav>
         {/* Sidebar */}
         <div className="w-80 bg-[var(--color-tactical-panel)] border-r border-[var(--color-tactical-border)] flex flex-col text-base shrink-0 overflow-hidden">
           {/* Tab switcher */}
@@ -494,6 +536,7 @@ export default function PlayPage() {
             selectedUnitId={selectedUnitId}
             pinnedRingIds={pinnedRingIds}
             theme={theme}
+            basemap={basemap}
             onUnitSelect={handleUnitSelect}
             contacts={gameState.contacts}
             orders={gameState.orders}
@@ -503,7 +546,35 @@ export default function PlayPage() {
             measureStart={measureStart}
             measureEnd={measureEnd}
             onMapClick={handleMapClick}
+            infrastructure={infrastructure}
+            onInfrastructureTarget={openTargetWorkflow}
+            onContextMenu={() => openTargetWorkflow()}
           />
+
+          <div className="absolute top-3 right-3 z-20 flex bg-[#0b1420e8] border border-[#40566d] rounded p-1">
+            <button onClick={() => setBasemap("street")} className={`px-3 py-1.5 text-xs cursor-pointer ${basemap === "street" ? "bg-[#29465f] text-white" : "text-slate-400"}`}>OSM MAP</button>
+            <button onClick={() => setBasemap("satellite")} className={`px-3 py-1.5 text-xs cursor-pointer ${basemap === "satellite" ? "bg-[#29465f] text-white" : "text-slate-400"}`}>SATELLITE · NO KEY</button>
+          </div>
+
+          {openWindows.has("targets") && <CommandWindow title="Possible Targets" eyebrow="TARGET DEVELOPMENT" onClose={() => closeWindow("targets")} className="top-16 left-4">
+            <div className="text-[10px] text-slate-400 mb-2">{strikeReport}</div>
+            {infrastructure.map((asset) => <TargetCard key={asset.id} asset={asset} selected={targetId === asset.id} onSelect={() => { setTargetId(asset.id); setStrikeReport(`TARGET SELECTED // LEFT-CLICK A WEAPON, THEN AUTHORIZE`); }} />)}
+          </CommandWindow>}
+
+          {openWindows.has("weapons") && <CommandWindow title="Select Weapon" eyebrow="EFFECTS CHAIN" onClose={() => closeWindow("weapons")} className="top-16 left-[370px]">
+            <div className="mb-3 text-[10px] text-slate-400">WORKFLOW 01 SELECT ASSET · 02 RIGHT-CLICK TARGET · 03 LEFT-CLICK EFFECT</div>
+            {WEAPONS.map((weapon) => <button key={weapon.id} onClick={() => setWeaponId(weapon.id)} className={`target-card ${weaponId === weapon.id ? "selected" : ""}`}><span className="target-status"/><span><strong>{weapon.name}</strong><small>{weapon.type} · RANGE {weapon.range}</small></span><b>{weapon.effect}</b></button>)}
+            <button disabled={!targetId} onClick={authorizeStrike} className="w-full mt-3 py-2 bg-red-700 disabled:bg-slate-700 disabled:text-slate-500 text-white text-xs font-bold tracking-[.12em] cursor-pointer">AUTHORIZE STRIKE</button>
+            <p className="text-[10px] text-slate-500 mt-2">Civilian sites remain visible for deconfliction. Damage updates integrity, operational state, and map symbology.</p>
+          </CommandWindow>}
+
+          {openWindows.has("news") && <CommandWindow title="News & Information Environment" eyebrow="SEPARATE LIVE WINDOW" onClose={() => closeWindow("news")} className="top-16 right-4 w-[390px]">
+            <MediaFeed infoWarState={infoWarState} simTime={gameState.simTime} onToggleEnabled={toggleEnabled} onMarkRead={markPostRead} />
+          </CommandWindow>}
+
+          {openWindows.has("ai") && <CommandWindow title="NPC AI Activity" eyebrow="AUTONOMOUS ACTORS" onClose={() => closeWindow("ai")} className="bottom-12 right-4">
+            <div className="space-y-3 text-xs"><div className="flex justify-between"><span>IRGCN Coastal Defense</span><b className="text-amber-400">ADAPTING</b></div><div className="h-1 bg-slate-700"><div className="h-full w-3/4 bg-amber-500"/></div><p className="text-slate-400">Re-evaluating patrol routes, sensor coverage, runway availability, and force preservation after every infrastructure effect.</p><div className="grid grid-cols-2 gap-2 text-[10px]"><span>ROE <b>WEAPONS FREE</b></span><span>POSTURE <b>DISPERSED</b></span><span>OODA <b>42 SEC</b></span><span>CONFIDENCE <b>0.78</b></span></div></div>
+          </CommandWindow>}
 
           {selectedUnit && (
             <DetailPanel

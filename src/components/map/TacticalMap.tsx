@@ -13,12 +13,15 @@ import { WeaponTrackLayer } from "./WeaponTrackLayer";
 import { SensorCoverageLayer } from "./SensorCoverageLayer";
 import { MeasurementLayer, type MeasurePoint } from "./MeasurementLayer";
 import type { WeaponInFlight } from "@/lib/simulation/combat";
+import { InfrastructureLayer } from "./InfrastructureLayer";
+import type { InfrastructureAsset } from "@/lib/scenarios/infrastructure";
 
 interface TacticalMapProps {
   scenario: Scenario;
   selectedUnitId: string | null;
   pinnedRingIds: Set<string>;
   theme: "dark" | "light";
+  basemap?: "street" | "satellite";
   onUnitSelect: (unitId: string | null, shiftKey?: boolean) => void;
   onMapReady?: () => void;
   // Simulation props (optional — static mode if omitted)
@@ -31,6 +34,9 @@ interface TacticalMapProps {
   measureEnd?: MeasurePoint | null;
   onMapClick?: (lngLat: { lng: number; lat: number }) => boolean | void;
   onUnitDrag?: (unitId: string, position: { lat: number; lng: number }) => void;
+  infrastructure?: InfrastructureAsset[];
+  onInfrastructureTarget?: (asset: InfrastructureAsset) => void;
+  onContextMenu?: (position: { lng: number; lat: number }) => void;
 }
 
 export function TacticalMap({
@@ -38,6 +44,7 @@ export function TacticalMap({
   selectedUnitId,
   pinnedRingIds,
   theme,
+  basemap = "street",
   onUnitSelect,
   onMapReady,
   contacts,
@@ -49,12 +56,16 @@ export function TacticalMap({
   measureEnd = null,
   onMapClick,
   onUnitDrag,
+  infrastructure = [],
+  onInfrastructureTarget,
+  onContextMenu,
 }: TacticalMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onUnitSelectRef = useRef(onUnitSelect);
   const onMapReadyRef = useRef(onMapReady);
   const onMapClickRef = useRef(onMapClick);
+  const onContextMenuRef = useRef(onContextMenu);
   const [mapReady, setMapReady] = useState(false);
   const [cursorPos, setCursorPos] = useState<{ lat: number; lng: number } | null>(null);
   const [zoom, setZoom] = useState(0);
@@ -70,6 +81,7 @@ export function TacticalMap({
   useEffect(() => {
     onMapClickRef.current = onMapClick;
   }, [onMapClick]);
+  useEffect(() => { onContextMenuRef.current = onContextMenu; }, [onContextMenu]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -112,6 +124,10 @@ export function TacticalMap({
         onMapClickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat }) === true;
       if (!handled) onUnitSelectRef.current(null);
     });
+    map.on("contextmenu", (e) => {
+      e.preventDefault();
+      onContextMenuRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+    });
 
     mapRef.current = map;
 
@@ -125,9 +141,9 @@ export function TacticalMap({
   // Theme switching
   useEffect(() => {
     if (!mapRef.current) return;
-    mapRef.current.setStyle(getMapStyle(theme));
+    mapRef.current.setStyle(getMapStyle(basemap === "satellite" ? "satellite" : theme));
     document.documentElement.className = theme === "light" ? "theme-light" : "";
-  }, [theme]);
+  }, [theme, basemap]);
 
   // In fog of war mode, only show friendly units directly
   const allUnits = scenario.sides.flatMap((s) => s.units);
@@ -149,6 +165,7 @@ export function TacticalMap({
             onUnitSelect={onUnitSelect}
             onUnitDrag={onUnitDrag}
           />
+          <InfrastructureLayer map={mapRef.current} assets={infrastructure} onContextTarget={onInfrastructureTarget} />
           {showSensorCoverage && orders && (
             <SensorCoverageLayer
               map={mapRef.current}
@@ -200,7 +217,7 @@ export function TacticalMap({
 
       {/* Status bar */}
       <div className="absolute bottom-0 left-0 right-0 h-9 bg-[var(--color-tactical-panel)] border-t border-[var(--color-tactical-border)] flex items-center px-4 text-base text-[var(--color-tactical-text-dim)] gap-6 z-10">
-        <span>SANDKASTEN v0.1</span>
+        <span>MAVEN // COMMON OPERATING PICTURE</span>
         {cursorPos && (
           <span>
             {cursorPos.lat.toFixed(4)}N {cursorPos.lng.toFixed(4)}E
